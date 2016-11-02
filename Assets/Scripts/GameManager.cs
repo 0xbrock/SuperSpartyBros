@@ -24,23 +24,39 @@ public class GameManager : MonoBehaviour {
 	public Text UILevel;
 	public GameObject[] UIExtraLives;
 	public GameObject UIGamePaused;
+    
+    // SFXs
+    public AudioClip oneUpSFX;
+    public AudioClip coinSFX;
 
 	// private variables
 	GameObject _player;
 	Vector3 _spawnLocation;
+    AudioSource _audio;
 
-	// set things up here
-	void Awake () {
+
+
+    // set things up here
+    void Awake () {
 		// setup reference to game manager
 		if (gm == null)
 			gm = this.GetComponent<GameManager>();
 
 		// setup all the variables, the UI, and provide errors if things not setup properly.
 		setupDefaults();
-	}
+        
+        _audio = GetComponent<AudioSource>();
+        if (_audio == null)
+        { // if AudioSource is missing
+            Debug.LogWarning("AudioSource component missing from this gameobject. Adding one.");
+            // let's just add the AudioSource component dynamically
+            _audio = gameObject.AddComponent<AudioSource>();
+        }
 
-	// game loop
-	void Update() {
+    }
+
+    // game loop
+    void Update() {
 		// if ESC pressed then pause the game
 		if (Input.GetKeyDown(KeyCode.Escape)) {
 			if (Time.timeScale > 0f) {
@@ -143,10 +159,29 @@ public class GameManager : MonoBehaviour {
 			highscore = score;
 			UIHighScore.text = "Highscore: "+score.ToString();
 		}
+
+        if (score > 0 && (score % 20 == 0))
+        {
+            // Extra Life!
+            lives++;
+            refreshGUI();
+            PlayerPrefManager.SavePlayerState(score, highscore, lives);
+            PlaySound(oneUpSFX);
+        }
+        else
+        {
+            PlaySound(coinSFX);
+        }
 	}
 
-	// public function to remove player life and reset game accordingly
-	public void ResetGame() {
+    // play sound through the audiosource on the gameobject
+    void PlaySound(AudioClip clip)
+    {
+        _audio.PlayOneShot(clip);
+    }
+
+    // public function to remove player life and reset game accordingly
+    public void ResetGame() {
 		// remove life and update GUI
 		lives--;
 		refreshGUI();
